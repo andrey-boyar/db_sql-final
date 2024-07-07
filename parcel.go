@@ -14,21 +14,15 @@ func NewParcelStore(db *sql.DB) ParcelStore {
 }
 
 func (s ParcelStore) Add(p Parcel) (int, error) {
-	// реализуйте добавление строки в таблицу parcel, используйте данные из переменной p, получите идентификатор новой вставленной записи
-	res, err := s.db.Exec("INSERT INTO parcel (number, client, address, status, created_at) VALUES (:number, :client, :address, :status, :created_at)",
-		sql.Named("number", p.Number),
+	/*реализуйте добавление строки в таблицу parcel, используйте данные из переменной p, получите идентификатор новой вставленной записи*/
+	res, err := s.db.Exec("INSERT INTO parcel (client, address, status, created_at) VALUES (:client, :address, :status, :created_at)",
+		//sql.Named("number", p.Number),
 		sql.Named("client", p.Client),
 		sql.Named("address", p.Address),
 		sql.Named("status", p.Status),
 		sql.Named("created_at", p.CreatedAt))
 	if err != nil {
 		return 0, err
-	}
-	// Проверка на дубликат
-	var exist int
-	err = s.db.QueryRow("SELECT 1 FROM parcel WHERE number = ?", p.Number).Scan(&exist)
-	if err == nil {
-		return 0, fmt.Errorf("посылка с таким номером уже существует:%w", err)
 	}
 	lastInsertID, err := res.LastInsertId()
 	if err != nil {
@@ -39,19 +33,10 @@ func (s ParcelStore) Add(p Parcel) (int, error) {
 }
 
 func (s ParcelStore) Get(number int) (Parcel, error) {
-	// реализуйте чтение строки по заданному number
-	// здесь из таблицы должна вернуться только одна строка
-	stmt, err := s.db.Prepare("SELECT number, client, address, status, created_at FROM parcel WHERE number = ?")
-	if err != nil {
-		return Parcel{}, fmt.Errorf("не удалось подготовить оператор select: %w", err)
-	}
-	defer stmt.Close()
-	// Выполните подготовленный оператор с номером участка
-	row := stmt.QueryRow(number)
-	// Создайте объект Parcel для хранения полученных данных
 	p := Parcel{}
+	rows := s.db.QueryRow("SELECT number, client, address, status, created_at FROM parcel WHERE number = ?", sql.Named("number", p.Number))
 	// Сканируйте значения из строки в поля объекта Parcel
-	err = row.Scan(&p.Number, &p.Client, &p.Address, &p.Status, &p.CreatedAt)
+	err := rows.Scan(&p.Number, &p.Client, &p.Address, &p.Status, &p.CreatedAt)
 	if err != nil {
 		return Parcel{}, fmt.Errorf("не удалось отсканировать строку: %w", err)
 	}
@@ -60,21 +45,13 @@ func (s ParcelStore) Get(number int) (Parcel, error) {
 }
 
 func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
-	// реализуйте чтение строк из таблицы parcel по заданному client
-	// здесь из таблицы может вернуться несколько строк
-	stmt, err := s.db.Prepare("SELECT number, client, address, status, created_at FROM parcel WHERE client = ?")
-	if err != nil {
-		return nil, fmt.Errorf("не удалось подготовить оператор select: %w", err)
-	}
-	defer stmt.Close()
-	// Выполните подготовленный оператор с идентификатором клиента
-	rows, err := stmt.Query(client)
-	if err != nil {
-		return nil, fmt.Errorf("не удалось выполнить оператор select: %w", err)
-	}
-	defer rows.Close()
 	// Создайте фрагмент для хранения полученных посылок
 	var parcell []Parcel
+	rows, err := s.db.Query("SELECT number, client, address, status, created_at FROM parcel WHERE client = ?")
+	if err != nil {
+		return parcell, fmt.Errorf("не удалось подготовить оператор select: %w", err)
+	}
+	defer rows.Close()
 	// Итерация по строкам, возвращенным запросом
 	for rows.Next() {
 		// Создаем объект Parcel для хранения данных из каждого ряда
@@ -97,13 +74,9 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 
 func (s ParcelStore) SetStatus(number int, status string) error {
 	// реализуйте обновление статуса в таблице parcel
-	stmt, err := s.db.Prepare("UPDATE parcel SET status = ? WHERE number = ?")
-	if err != nil {
-		return fmt.Errorf("не удалось подготовить оператор обновления: %w", err)
-	}
-	defer stmt.Close()
-	// Выполните подготовленный оператор с новым статусом и номером участка
-	_, err = stmt.Exec(status, number)
+	_, err := s.db.Exec("UPDATE parcel SET status = ? WHERE number = ?",
+		sql.Named("status", ParcelStatusRegistered),
+		sql.Named("number", number))
 	if err != nil {
 		return fmt.Errorf("не удалось выполнить оператор обновления: %w", err)
 	}
@@ -111,24 +84,22 @@ func (s ParcelStore) SetStatus(number int, status string) error {
 }
 
 func (s ParcelStore) SetAddress(number int, address string) error {
-	// реализуйте обновление адреса в таблице parcel
-	// менять адрес можно только если значение статуса registered
-	stmt, err := s.db.Prepare("UPDATE parcel SET address = ? WHERE number = ? AND status = ?")
+	/* реализуйте обновление адреса в таблице parcel
+	менять адрес можно только если значение статуса registered*/
+	_, err := s.db.Exec("UPDATE parcel SET address = ? WHERE number = ? AND status = ?",
+		sql.Named("address", address),
+		sql.Named("number", number),
+		sql.Named("status", ParcelStatusRegistered))
 	if err != nil {
-		return fmt.Errorf("не удалось подготовить оператор обновления: %w", err)
-	}
-	defer stmt.Close()
-	// Выполните подготовленный оператор с новым адресом, номером участка и статусом
-	_, err = stmt.Exec(address, number, ParcelStatusRegistered)
-	if err != nil {
+		//return
 		return fmt.Errorf("не удалось выполнить оператор обновления: %w", err)
 	}
 	return nil
 }
 
 func (s ParcelStore) Delete(number int) error {
-	// реализуйте удаление строки из таблицы parcel
-	// удалять строку можно только если значение статуса registered
+	/* реализуйте удаление строки из таблицы parcel
+	удалять строку можно только если значение статуса registered*/
 	stmt, err := s.db.Prepare("DELETE FROM parcel WHERE number = ? AND status = ?")
 	if err != nil {
 		return fmt.Errorf("не удалось подготовить оператор удаления: %w", err)
