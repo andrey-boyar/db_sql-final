@@ -14,8 +14,7 @@ func NewParcelStore(db *sql.DB) ParcelStore {
 }
 
 func (s ParcelStore) Add(p Parcel) (int, error) {
-	// реализуйте добавление строки в таблицу parcel, используйте данные из переменной p
-	// Получите идентификатор новой вставленной записи
+	// реализуйте добавление строки в таблицу parcel, используйте данные из переменной p, получите идентификатор новой вставленной записи
 	res, err := s.db.Exec("INSERT INTO parcel (number, client, address, status, created_at) VALUES (:number, :client, :address, :status, :created_at)",
 		sql.Named("number", p.Number),
 		sql.Named("client", p.Client),
