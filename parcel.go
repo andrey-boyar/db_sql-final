@@ -14,7 +14,7 @@ func NewParcelStore(db *sql.DB) ParcelStore {
 }
 
 func (s ParcelStore) Add(p Parcel) (int, error) {
-	// реализуйте добавление строки в таблицу parcel, используйте данные из переменной p, получите идентификатор новой вставленной записи
+	/*реализуйте добавление строки в таблицу parcel, используйте данные из переменной p, получите идентификатор новой вставленной записи*/
 	res, err := s.db.Exec("INSERT INTO parcel (number, client, address, status, created_at) VALUES (:number, :client, :address, :status, :created_at)",
 		sql.Named("number", p.Number),
 		sql.Named("client", p.Client),
@@ -39,8 +39,8 @@ func (s ParcelStore) Add(p Parcel) (int, error) {
 }
 
 func (s ParcelStore) Get(number int) (Parcel, error) {
-	// реализуйте чтение строки по заданному number
-	// здесь из таблицы должна вернуться только одна строка
+	/* реализуйте чтение строки по заданному number
+	здесь из таблицы должна вернуться только одна строка*/
 	stmt, err := s.db.Prepare("SELECT number, client, address, status, created_at FROM parcel WHERE number = ?")
 	if err != nil {
 		return Parcel{}, fmt.Errorf("не удалось подготовить оператор select: %w", err)
@@ -60,8 +60,8 @@ func (s ParcelStore) Get(number int) (Parcel, error) {
 }
 
 func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
-	// реализуйте чтение строк из таблицы parcel по заданному client
-	// здесь из таблицы может вернуться несколько строк
+	/*реализуйте чтение строк из таблицы parcel по заданному client
+	здесь из таблицы может вернуться несколько строк*/
 	stmt, err := s.db.Prepare("SELECT number, client, address, status, created_at FROM parcel WHERE client = ?")
 	if err != nil {
 		return nil, fmt.Errorf("не удалось подготовить оператор select: %w", err)
@@ -111,8 +111,8 @@ func (s ParcelStore) SetStatus(number int, status string) error {
 }
 
 func (s ParcelStore) SetAddress(number int, address string) error {
-	// реализуйте обновление адреса в таблице parcel
-	// менять адрес можно только если значение статуса registered
+	/* реализуйте обновление адреса в таблице parcel
+	менять адрес можно только если значение статуса registered*/
 	stmt, err := s.db.Prepare("UPDATE parcel SET address = ? WHERE number = ? AND status = ?")
 	if err != nil {
 		return fmt.Errorf("не удалось подготовить оператор обновления: %w", err)
@@ -127,8 +127,8 @@ func (s ParcelStore) SetAddress(number int, address string) error {
 }
 
 func (s ParcelStore) Delete(number int) error {
-	// реализуйте удаление строки из таблицы parcel
-	// удалять строку можно только если значение статуса registered
+	/* реализуйте удаление строки из таблицы parcel
+	удалять строку можно только если значение статуса registered*/
 	stmt, err := s.db.Prepare("DELETE FROM parcel WHERE number = ? AND status = ?")
 	if err != nil {
 		return fmt.Errorf("не удалось подготовить оператор удаления: %w", err)
